@@ -1,10 +1,12 @@
+const redis = require("../config/redis");
+
 const {
     CIRCUIT_STATE,
     circuit,
     COOLDOWN_PERIOD,
   } = require("../circuitBreaker/orderCircuitBreaker");
   
-  module.exports = function orderCircuitGuard(req, res, next) {
+  module.exports = async function orderCircuitGuard(req, res, next) {
     const now = Date.now();
   
     // 🔴 If circuit is OPEN
@@ -19,10 +21,26 @@ const {
       }
   
       // Still in cooldown → block request
-      console.log("🔴 Circuit OPEN — request blocked");
-      return res.status(503).json({
-        error: "Order service temporarily unavailable. Please try later.",
-      });
+      
+      console.log("🔴 Circuit OPEN — attempting fallback from Redis");
+
+const cachedOrders = await redis.get("orders:cache");
+
+if (cachedOrders) {
+  console.log("📦 Serving orders from Redis cache");
+
+  return res.status(200).json({
+    source: "cache",
+    data: JSON.parse(cachedOrders),
+  });
+}
+
+console.log("⚠️ No cache found, returning service unavailable");
+
+return res.status(503).json({
+  error: "Order service temporarily unavailable. Please try later.",
+});
+
     }
   
     // 🟢 CLOSED or 🟡 HALF_OPEN → allow request

@@ -4,6 +4,7 @@
 //   proxyReqPathResolver: () => "/orders",
 // });
 console.log("🔥🔥🔥 REAL order.proxy.js HIT 🔥🔥🔥");
+const redis = require("../config/redis");
 
 const axios = require("axios");
 const {
@@ -21,6 +22,17 @@ module.exports = async function orderProxy(req, res) {
     // 🟢 SUCCESS → reset circuit
     circuit.failureCount = 0;
     circuit.state = CIRCUIT_STATE.CLOSED;
+
+     // 🔁 Cache response in Redis
+    await redis.set(
+    "orders:cache",
+    JSON.stringify(response.data),
+    "EX",
+     60 // cache for 60 seconds
+);
+
+console.log("📦 Orders cached in Redis");
+
 
     // Return actual response
     return res.status(200).json(response.data);
