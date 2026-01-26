@@ -18,6 +18,11 @@ app.get("/orders", (req, res) => {
   res.json(orders);
 });
 
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "UP" });
+});
+
+
 const PORT = process.env.PORT || 4000;
 
 // ✅ Connect to Redis FIRST
