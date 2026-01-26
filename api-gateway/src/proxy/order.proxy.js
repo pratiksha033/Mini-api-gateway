@@ -4,16 +4,23 @@ const { getService } = require("../registry/serviceRegistry");
 
 const orderCircuit = require("../circuitBreaker/order.service");
 const { CIRCUIT_STATE } = require("../circuitBreaker/createCircuitBreaker");
+const { getAllServices } = require("../registry/serviceRegistry");
+const roundRobin = require("../loadBalancer/roundRobin");
+
 
 module.exports = async function orderProxy(req, res) {
   try {
-    const serviceUrl = await getService("order-service");
+    const services = await getAllServices("order-service");
+    const serviceUrl = await roundRobin("order-service", services);
     
-if (!serviceUrl) {
-  return res.status(503).json({
-    error: "Order service not registered",
-  });
-}
+    if (!serviceUrl) {
+      return res.status(503).json({
+        error: "No order-service instances available",
+      });
+    }
+    console.log(`⚖️ Load balanced to ${serviceUrl}`);
+
+    
     const response = await axios.get(`${serviceUrl}/orders`);
 
     orderCircuit.failureCount = 0;
