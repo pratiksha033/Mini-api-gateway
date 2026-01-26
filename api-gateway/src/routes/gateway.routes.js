@@ -7,15 +7,12 @@ const { logger, metrics } = require("../middlewares/logger");
 const router = express.Router();
 
 
-// Metrics endpoint (NO auth for now)
-router.get("/metrics", (req, res) => {
-    res.json(metrics);
-  });
+
 router.get(
   "/orders",
   logger,  
   apiKeyAuth,     // 1️⃣ auth
-  //rateLimiter,   // 2️⃣ rate limit
+  rateLimiter,   // 2️⃣ rate limit
   orderCircuitGuard, 
   orderProxy     // 3️⃣ FINAL handler (response here)
 );

@@ -1,5 +1,7 @@
 const express = require("express");
 const app = express();
+const { registerService } = require("../api-gateway/src/registry/serviceRegistry");
+
 
 app.use(express.json());
 
@@ -14,6 +16,12 @@ app.get("/orders", (req, res) => {
   res.json(orders);
 });
 
-app.listen(4000, () => {
-  console.log("Order Service running on port 4000");
+
+const PORT = 4000;
+
+app.listen(PORT, () => {
+  console.log(`Order service running on port ${PORT}`);
+
+  registerService("order-service", `http://localhost:${PORT}`);
 });
+

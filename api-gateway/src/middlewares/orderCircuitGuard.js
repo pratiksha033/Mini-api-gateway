@@ -1,11 +1,8 @@
 const redis = require("../config/redis");
 
-const {
-    CIRCUIT_STATE,
-    circuit,
-    COOLDOWN_PERIOD,
-  } = require("../circuitBreaker/orderCircuitBreaker");
-  
+const orderCircuit = require("../circuitBreaker/order.service");
+const { CIRCUIT_STATE } = orderCircuit;
+
   module.exports = async function orderCircuitGuard(req, res, next) {
     const now = Date.now();
   

@@ -7,11 +7,8 @@ console.log("🔥🔥🔥 REAL order.proxy.js HIT 🔥🔥🔥");
 const redis = require("../config/redis");
 
 const axios = require("axios");
-const {
-  CIRCUIT_STATE,
-  circuit,
-  FAILURE_THRESHOLD,
-} = require("../circuitBreaker/orderCircuitBreaker");
+const orderCircuit = require("../circuitBreaker/order.service");
+const { CIRCUIT_STATE } = orderCircuit;
 
 module.exports = async function orderProxy(req, res) {
   try {
@@ -20,8 +17,8 @@ module.exports = async function orderProxy(req, res) {
     const response = await axios.get("http://localhost:4000/orders");
 
     // 🟢 SUCCESS → reset circuit
-    circuit.failureCount = 0;
-    circuit.state = CIRCUIT_STATE.CLOSED;
+    orderCircuit.failureCount = 0;
+    orderCircuit.state = CIRCUIT_STATE.CLOSED;
 
      // 🔁 Cache response in Redis
     await redis.set(
@@ -39,18 +36,18 @@ console.log("📦 Orders cached in Redis");
   } catch (error) {
     
     // 🔴 FAILURE detected
-    circuit.failureCount += 1;
-    circuit.lastFailureTime = Date.now();
+    orderCircuit.failureCount += 1;
+    orderCircuit.lastFailureTime = Date.now();
     console.log("❌ axios FAILED, circuit logic running");
 
 
     console.log(
-      `❌ Order service failure count: ${circuit.failureCount}`
+      `❌ Order service failure count: ${orderCircuit.failureCount}`
     );
 
     // If threshold reached → OPEN circuit
-    if (circuit.failureCount >= FAILURE_THRESHOLD) {
-      circuit.state = CIRCUIT_STATE.OPEN;
+    if (orderCircuit.failureCount >= FAILURE_THRESHOLD) {
+      orderCircuit.state = CIRCUIT_STATE.OPEN;
       console.log("🔴 Circuit OPENED due to failures");
     }
 
