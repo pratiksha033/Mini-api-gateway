@@ -1,15 +1,15 @@
-const services = {};
+const redis = require("../config/redis");
 
-function registerService(name, url) {
-  services[name] = url;
-  console.log(`📡 Service registered: ${name} → ${url}`);
+async function registerService(name, url) {
+  await redis.sadd(`service:${name}`, url);
+  console.log(`📡 Registered ${name} → ${url}`);
 }
 
-function getService(name) {
-  return services[name];
+async function getAllServices(name) {
+  return await redis.smembers(`service:${name}`);
 }
 
 module.exports = {
   registerService,
-  getService,
+  getAllServices,
 };

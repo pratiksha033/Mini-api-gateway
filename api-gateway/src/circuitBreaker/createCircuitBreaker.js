@@ -4,7 +4,7 @@ const CIRCUIT_STATE = {
     HALF_OPEN: "HALF_OPEN",
   };
   
-  module.exports = function createCircuitBreaker({
+  function createCircuitBreaker({
     failureThreshold = 3,
     cooldownPeriod = 30_000,
   }) {
@@ -14,7 +14,11 @@ const CIRCUIT_STATE = {
       lastFailureTime: null,
       failureThreshold,
       cooldownPeriod,
-      CIRCUIT_STATE,
     };
+  }
+  
+  module.exports = {
+    createCircuitBreaker,
+    CIRCUIT_STATE,
   };
   

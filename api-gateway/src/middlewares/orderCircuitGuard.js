@@ -1,46 +1,30 @@
 const redis = require("../config/redis");
-
 const orderCircuit = require("../circuitBreaker/order.service");
-const { CIRCUIT_STATE } = orderCircuit;
+const { CIRCUIT_STATE } = require("../circuitBreaker/createCircuitBreaker");
 
-  module.exports = async function orderCircuitGuard(req, res, next) {
-    const now = Date.now();
-  
-    // 🔴 If circuit is OPEN
-    if (circuit.state === CIRCUIT_STATE.OPEN) {
-      const timeSinceLastFailure = now - circuit.lastFailureTime;
-  
-      // Cooldown over → try HALF_OPEN
-      if (timeSinceLastFailure > COOLDOWN_PERIOD) {
-        circuit.state = CIRCUIT_STATE.HALF_OPEN;
-        console.log("🟡 Circuit HALF_OPEN — testing service");
-        return next();
-      }
-  
-      // Still in cooldown → block request
-      
-      console.log("🔴 Circuit OPEN — attempting fallback from Redis");
+module.exports = async function orderCircuitGuard(req, res, next) {
+  const now = Date.now();
 
-const cachedOrders = await redis.get("orders:cache");
+  if (orderCircuit.state === CIRCUIT_STATE.OPEN) {
+    const timeSinceLastFailure = now - orderCircuit.lastFailureTime;
 
-if (cachedOrders) {
-  console.log("📦 Serving orders from Redis cache");
-
-  return res.status(200).json({
-    source: "cache",
-    data: JSON.parse(cachedOrders),
-  });
-}
-
-console.log("⚠️ No cache found, returning service unavailable");
-
-return res.status(503).json({
-  error: "Order service temporarily unavailable. Please try later.",
-});
-
+    if (timeSinceLastFailure > orderCircuit.cooldownPeriod) {
+      orderCircuit.state = CIRCUIT_STATE.HALF_OPEN;
+      return next();
     }
-  
-    // 🟢 CLOSED or 🟡 HALF_OPEN → allow request
-    next();
-  };
-  
+
+    const cachedOrders = await redis.get("orders:cache");
+    if (cachedOrders) {
+      return res.status(200).json({
+        source: "cache",
+        data: JSON.parse(cachedOrders),
+      });
+    }
+
+    return res.status(503).json({
+      error: "Order service temporarily unavailable",
+    });
+  }
+
+  next();
+};
